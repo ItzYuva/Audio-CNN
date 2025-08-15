@@ -15,7 +15,6 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from model import AudioCNN
 
-import model
 
 app = modal.App("Audio-CNN")
 
