@@ -4,3 +4,6 @@ torch
 tqdm
 numpy
 tensorboard
+fastapi
+librosa
+pydantics
