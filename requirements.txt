@@ -1,1 +1,6 @@
 pandas
+torchaudio
+torch
+tqdm
+numpy
+tensorboard
