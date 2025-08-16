@@ -6,4 +6,4 @@ numpy
 tensorboard
 fastapi
 librosa
-pydantics
+pydantic
