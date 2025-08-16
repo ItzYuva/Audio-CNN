@@ -1,4 +1,5 @@
 import modal
+import requests
 import torch
 import torch.nn as nn
 import torchaudio.transforms as T
@@ -52,7 +53,7 @@ class AudioClassifier:
         checkpoint = torch.load("/models/best_model.pth", map_location=self.device)
         self.classes = checkpoint["classes"]
         self.model = AudioCNN(num_classes=len(self.classes))
-        self.model.load_state_dict(checkpoint["model_state_dict"])
+        self.model.load_state_dict(checkpoint["model"])
         self.model.to(self.device)
         self.model.eval()
 
@@ -78,4 +79,32 @@ class AudioClassifier:
 
             output = torch.nan_to_num(output)
             probabilities = torch.softmax(output, dim=1)
-            
+            top_3_probs, top_3_indices = torch.topk(probabilities[0], k=3)
+
+            predictions = [{"class": self.classes[idx.item()], "confidence": prob.item()}
+                           for prob, idx in zip(top_3_probs, top_3_indices)]
+
+        response = {
+            "predictions": predictions
+        }
+
+        return response
+    
+@app.local_entrypoint()
+def main():
+    audio_data, sample_rate = sf.read("chirpingbirds.wav")
+
+    buffer = io.BytesIO()
+    sf.write(buffer, audio_data, 22050, format='WAV')
+    audio_b64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    payload = {"audio_data": audio_b64}
+
+    server = AudioClassifier()
+    url = server.inference.get_web_url()
+    response = requests.post(url, json = payload)
+    response.raise_for_status()
+
+    result = response.json()
+    print("Top predictions:")
+    for pred in result.get("predictions", []):
+        print(f"Class: {pred['class']}, Confidence: {pred['confidence']:0.2%}")
